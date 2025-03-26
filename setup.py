@@ -16,6 +16,7 @@ setup(
         "textblob",
         "tweepy",
         "wordcloud",
+        "dagster_azure",
     ],
     extras_require={"dev": ["dagster-webserver", "pytest"]},
 )
