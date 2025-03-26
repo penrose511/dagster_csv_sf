@@ -1,30 +1,48 @@
-from dagster import asset
-from dagster_azure.adls2 import ADLS2Resource
-from azure.storage.blob import ContainerClient
+from dagster import asset, Definitions
+import pandas as pd
+from io import StringIO
+from azure.storage.blob import BlobServiceClient
 
-@asset(required_resource_keys={"adls2"})
-def azure_blob_file_list(context):
-    # Get the adls2 resource from context
-    adls2: ADLS2Resource = context.resources.adls2
-    
-    # Container name
-    container_name = "storage"
-    
-    # Correct ContainerClient initialization with container_name as a separate argument
-    container_client = ContainerClient(
-        account_url=f"https://{adls2.storage_account}.blob.core.windows.net",
-        credential=adls2.credential.token,
-        container_name=container_name
-    )
-    
-    # List all blobs in the container
-    file_names = []
-    blobs_list = container_client.list_blobs()
-    
-    for blob in blobs_list:
-        file_names.append(blob.name)
-    
-    # Log the number of files found and return the file names
-    context.log.info(f"Found {len(file_names)} files in container '{container_name}'")
-    
-    return file_names
+# Function to read CSV from ADLS2
+def read_csv_from_adls2(storage_account, sas_token, container_name, blob_name):
+    """Reads a CSV file from Azure Data Lake Storage Gen2 into a Pandas DataFrame."""
+    try:
+        # Create a BlobServiceClient using the SAS token
+        blob_service_client = BlobServiceClient(
+            account_url=f"https://{storage_account}.blob.core.windows.net",
+            credential=sas_token
+        )
+
+        # Get a reference to the blob
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+
+        # Download the blob content
+        blob_data = blob_client.download_blob().readall()
+
+        # Decode the content and read into a pandas DataFrame
+        csv_data = blob_data.decode('utf-8')
+        df = pd.read_csv(StringIO(csv_data))
+
+        return df
+
+    except Exception as e:
+        print(f"Error reading CSV from ADLS2: {e}")
+        return None
+
+# Asset to read CSV and return a dataframe
+@asset
+def adls2_csv_asset(adls2: "ADLS2Resource"):
+    """Dagster asset to read a CSV file from Azure Data Lake Storage and return a Pandas DataFrame."""
+    storage_account = adls2.storage_account
+    sas_token = adls2.credential.token
+    container_name = "storage"  # Replace with your container name
+    blob_name = "Landing/VehicleYear-2024.csv"  # Replace with your blob name
+
+    # Call the function to read the CSV
+    df = read_csv_from_adls2(storage_account, sas_token, container_name, blob_name)
+
+    if df is not None:
+        print(df.head())  # Print the first few rows of the DataFrame
+        return df
+    else:
+        raise ValueError("Failed to load CSV from ADLS2")
