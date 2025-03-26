@@ -1,31 +1,15 @@
 import pandas as pd
 import io
 from dagster import asset, Output, MetadataValue
-from azure.storage.filedatalake import DataLakeServiceClient
-from io import BytesIO
-
-# Helper function to read the file from ADLS2
-def read_file_from_adls2(storage_account_name: str, file_system_name: str, file_path: str, credential: str):
-    service_client = DataLakeServiceClient(account_url=f"https://{storage_account_name}.dfs.core.windows.net", credential=credential)
-    file_system_client = service_client.get_file_system_client(file_system_name)
-    file_client = file_system_client.get_file_client(file_path)
-    
-    # Read the file into memory
-    download = file_client.download_file()
-    file_data = download.readall()
-    
-    return file_data
+from dagster_azure.adls2 import ADLS2Resource
 
 @asset(io_manager_key="io_manager")
 def adls2_to_snowflake(context, adls2: ADLS2Resource):
-    # Define the Azure storage account and file system
-    storage_account_name = "my_storage_account"  # Your storage account name
-    file_system_name = "my_file_system"  # Your file system name (container in ADLS2)
-    file_path = "Landing/VehicleYear-2024.csv"  # File path in ADLS2
-    credential = "your_sas_token"  # SAS Token or credential to access ADLS2
-    
-    # Use the helper function to read the file content from ADLS2
-    file_data = read_file_from_adls2(storage_account_name, file_system_name, file_path, credential)
+    # Define the file path in ADLS2
+    file_path = "Landing/VehicleYear-2024.csv"  # Replace with the correct path
+
+    # Use the ADLS2Resource to read the file content from ADLS2 into memory
+    file_data = adls2.read_file(file_path)  # Correct method to read the file
     
     # Convert the CSV content into a pandas DataFrame
     df = pd.read_csv(io.BytesIO(file_data))
