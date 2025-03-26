@@ -12,7 +12,7 @@ def read_vehicle_year_csv(context) -> pd.DataFrame:
     adls2_resource = context.resources.adls2
     
     # Define the container and blob (file) name
-    container_name = "your-container-name"  # Replace with your actual container name
+    container_name = "storage"  # Replace with your actual container name
     blob_name = "Landing/VehicleYear-2024.csv"  # Blob path
     
     # Create the BlobServiceClient using the provided storage account
