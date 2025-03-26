@@ -9,7 +9,7 @@ def adls2_to_snowflake(context, adls2: ADLS2Resource):
     file_path = "Landing/VehicleYear-2024.csv"  # Replace with the correct path
     
     # Read the file content from ADLS2 into memory using the `adls2` resource
-    file_data = context.read_file(file_path)  # You can directly use `adls2` here
+    file_data = adls2.read_file(file_path)  # Use the `adls2` resource directly here
     
     # Convert the CSV content into a pandas DataFrame
     df = pd.read_csv(io.BytesIO(file_data))
