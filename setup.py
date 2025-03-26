@@ -17,6 +17,7 @@ setup(
         "tweepy",
         "wordcloud",
         "dagster_azure",
+        "azure-storage-file-datalake",
     ],
     extras_require={"dev": ["dagster-webserver", "pytest"]},
 )
