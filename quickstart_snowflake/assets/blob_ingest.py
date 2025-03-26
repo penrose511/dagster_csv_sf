@@ -1,5 +1,6 @@
 import pandas as pd
 from azure.storage.blob import BlobServiceClient
+from azure.core.credentials import AzureSasCredential  # Import the correct credential type
 from dagster import asset, Output
 
 @asset(
@@ -11,18 +12,20 @@ def read_vehicle_year_csv(context) -> pd.DataFrame:
     # Retrieve the ADLS2 resource from the context
     adls2_resource = context.resources.adls2
     
-    # Define the container and blob (file) name
-    container_name = "storage"  # Replace with your actual container name
-    blob_name = "Landing/VehicleYear-2024.csv"  # Blob path
+    # Blob path (file name)
+    blob_name = "Landing/VehicleYear-2024.csv"
     
-    # Create the BlobServiceClient using the provided storage account
+    # Use AzureSasCredential for the SAS token
+    sas_credential = AzureSasCredential(adls2_resource.credential.token)
+    
+    # Create the BlobServiceClient using the provided storage account and AzureSasCredential
     blob_service_client = BlobServiceClient(
         account_url=f"https://{adls2_resource.storage_account}.blob.core.windows.net",
-        credential=adls2_resource.credential
+        credential=sas_credential
     )
     
-    # Get the blob client
-    blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+    # Get the blob client, using the container name from the resource
+    blob_client = blob_service_client.get_blob_client(container=adls2_resource.container_name, blob=blob_name)
     
     # Download the blob content (CSV file)
     stream = blob_client.download_blob()
@@ -36,6 +39,6 @@ def read_vehicle_year_csv(context) -> pd.DataFrame:
         data,
         metadata={
             "num_rows": len(data),
-            "blob_url": f"https://{adls2_resource.storage_account}.blob.core.windows.net/{container_name}/{blob_name}"
+            "blob_url": f"https://{adls2_resource.storage_account}.blob.core.windows.net/{adls2_resource.container_name}/{blob_name}"
         }
     )
