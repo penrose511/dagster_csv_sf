@@ -1,44 +1,30 @@
-import pandas as pd
+from dagster import asset
 from azure.storage.blob import BlobServiceClient
-from azure.core.credentials import AzureSasCredential  # Import the correct credential type
-from dagster import asset, Output
+from dagster_azure.adls2 import ADLS2Resource
 
-@asset(
-    required_resource_keys={"adls2"},
-    name="read_vehicle_year_csv",
-    description="Reads the 'Landing/VehicleYear-2024.csv' file from Azure Blob Storage and returns a DataFrame.",
-)
-def read_vehicle_year_csv(context) -> pd.DataFrame:
-    # Retrieve the ADLS2 resource from the context
-    adls2_resource = context.resources.adls2
+@asset(required_resource_keys={"adls2"})
+def azure_blob_file_list(context):
+    # Get the adls2 resource from context
+    adls2: ADLS2Resource = context.resources.adls2
     
-    # Blob path (file name)
-    blob_name = "Landing/VehicleYear-2024.csv"
-    
-    # Use AzureSasCredential for the SAS token
-    sas_credential = AzureSasCredential(adls2_resource.credential.token)
-    
-    # Create the BlobServiceClient using the provided storage account and AzureSasCredential
+    # Create a blob service client using the resource
     blob_service_client = BlobServiceClient(
-        account_url=f"https://{adls2_resource.storage_account}.blob.core.windows.net",
-        credential=sas_credential
+        account_url=f"https://{adls2.storage_account}.blob.core.windows.net",
+        credential=adls2.credential.token,
     )
     
-    # Get the blob client, using the container name from the resource
-    blob_client = blob_service_client.get_blob_client(container=adls2_resource.container_name, blob=blob_name)
+    # Specify the container you want to list files from
+    container_name = "Storage"
+    container_client = blob_service_client.get_container_client(container_name)
     
-    # Download the blob content (CSV file)
-    stream = blob_client.download_blob()
+    # List all blobs in the container
+    file_names = []
+    blobs_list = container_client.list_blobs()
     
-    # Load the CSV data into a pandas DataFrame
-    csv_content = stream.readall()
-    data = pd.read_csv(pd.compat.StringIO(csv_content.decode('utf-8')))
+    for blob in blobs_list:
+        file_names.append(blob.name)
     
-    # Return the DataFrame with metadata
-    return Output(
-        data,
-        metadata={
-            "num_rows": len(data),
-            "blob_url": f"https://{adls2_resource.storage_account}.blob.core.windows.net/{adls2_resource.container_name}/{blob_name}"
-        }
-    )
+    # Optionally log or return the list of file names
+    context.log.info(f"Found {len(file_names)} files in container '{container_name}'")
+    
+    return file_names
