@@ -1,29 +1,21 @@
 import pandas as pd
-import io
-from dagster import asset, Output, MetadataValue
+from dagster import asset
 from dagster_azure.adls2 import ADLS2Resource
 
-@asset(io_manager_key="io_manager")
-def adls2_to_snowflake(context, adls2: ADLS2Resource):
-    # Define the file path in ADLS2
-    file_path = "Landing/VehicleYear-2024.csv"  # Replace with the correct path
-
-    # Use the ADLS2Resource to read the file content from ADLS2 into memory
-    file_data = adls2.read_file(file_path)  # Correct method to read the file
+@asset(
+    required_resource_keys={"adls2"}
+)
+def read_csv_from_adls(context):
+    # Specify the file path in ADLS
+    file_path = "Landing/VehicleYear-2024.csv"
     
-    # Convert the CSV content into a pandas DataFrame
-    df = pd.read_csv(io.BytesIO(file_data))
+    # Read CSV from ADLS using the ADLS2Resource
+    adls2 = context.resources.adls2
     
-    # Optional: Perform transformations on the data
-    # Example: df.dropna(inplace=True)
+    # Use ADLS2Resource to get the file stream
+    file_stream = adls2.read(file_path)
     
-    # Add metadata about the file (optional, useful for monitoring/debugging)
-    context.add_output_metadata(
-        {"file_path": MetadataValue.text(file_path), "num_records": len(df)}
-    )
+    # Use Pandas to read the CSV file from the stream
+    df = pd.read_csv(file_stream)
     
-    # Log some useful information
-    context.log.info(f"Successfully read {len(df)} records from {file_path}")
-    
-    # Return the DataFrame to be written to Snowflake (or another downstream process)
-    return Output(df)
+    return df
