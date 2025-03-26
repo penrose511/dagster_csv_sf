@@ -14,7 +14,7 @@ def azure_blob_file_list(context):
     )
     
     # Specify the container you want to list files from
-    container_name = "Storage"
+    container_name = "storage"
     container_client = blob_service_client.get_container_client(container_name)
     
     # List all blobs in the container
