@@ -3,9 +3,9 @@ from dagster import Definitions, asset, job
 from dagster_azure.adls2 import ADLS2Resource, ADLS2SASToken
 
 @asset(io_manager_key="io_manager")
-def adls2_to_snowflake(context):
+def adls2_to_snowflake(adls2: ADLS2Resource):
     # Fetch the ADLS2 resource from context
-    adls2_resource = context.resources.adls2
+    adls2_resource = adls2.resources.adls2
 
     # Define the file path in ADLS2
     file_path = "Landing/VehicleYear-2024.csv"  # Replace with the correct path
@@ -20,7 +20,7 @@ def adls2_to_snowflake(context):
     # For example: df.dropna(inplace=True)
     
     # Add metadata about the file (optional)
-    context.add_output_metadata(
+    adls2.add_output_metadata(
         {"file_path": MetadataValue.text(file_path), "num_records": len(df)}
     )
     
