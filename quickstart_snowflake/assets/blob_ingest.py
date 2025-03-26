@@ -1,8 +1,9 @@
-from dagster import asset, Definitions
+from dagster import asset
 import pandas as pd
 from io import StringIO
 from azure.storage.blob import BlobServiceClient
-from dagster_azure.adls2 import ADLS2Resource
+from dagster import Definitions, asset, job, op
+from dagster_azure.adls2 import ADLS2Resource, ADLS2SASToken
 
 # Function to read CSV from ADLS2
 def read_csv_from_adls2(storage_account, sas_token, container_name, blob_name):
@@ -23,11 +24,12 @@ def read_csv_from_adls2(storage_account, sas_token, container_name, blob_name):
         # Decode the content and read into a pandas DataFrame
         csv_data = blob_data.decode('utf-8')
         df = pd.read_csv(StringIO(csv_data))
-
+        print("About to return df")
         return df
 
     except Exception as e:
         print(f"Error reading CSV from ADLS2: {e}")
+        # Return None in case of an exception
         return None
 
 # Asset to read CSV and return a dataframe
@@ -36,8 +38,8 @@ def adls2_csv_asset(adls2: "ADLS2Resource"):
     """Dagster asset to read a CSV file from Azure Data Lake Storage and return a Pandas DataFrame."""
     storage_account = adls2.storage_account
     sas_token = adls2.credential.token
-    container_name = "storage"  # Replace with your container name
-    blob_name = "Landing/VehicleYear-2024.csv"  # Replace with your blob name
+    container_name = "storage"
+    blob_name = "Landing/VehicleYear-2024.csv" 
 
     # Call the function to read the CSV
     df = read_csv_from_adls2(storage_account, sas_token, container_name, blob_name)
@@ -45,5 +47,3 @@ def adls2_csv_asset(adls2: "ADLS2Resource"):
     if df is not None:
         print(df.head())  # Print the first few rows of the DataFrame
         return df
-    else:
-        raise ValueError("Failed to load CSV from ADLS2")

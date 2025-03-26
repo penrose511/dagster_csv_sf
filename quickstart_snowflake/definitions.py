@@ -29,8 +29,8 @@ defs = Definitions(
             schema=EnvVar("SNOWFLAKE_SCHEMA"),
         ),
         "adls2": ADLS2Resource(
-            storage_account="my_storage_account",
-            credential=ADLS2SASToken(token="my_sas_token"),
+            storage_account=EnvVar("my_storage_account"),
+            credential=ADLS2SASToken(token=EnvVar("my_sas_token")),
         )
     },
     schedules=[daily_refresh_schedule],
