@@ -1,6 +1,7 @@
 from dagster import asset, Definitions
 import pandas as pd
 from io import StringIO
+from dagster_azure.adls2 import ADLS2Resource
 from azure.storage.blob import BlobServiceClient
 
 # Function to read CSV from ADLS2
