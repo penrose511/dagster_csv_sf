@@ -6,6 +6,7 @@ from dagster import (
     load_assets_from_package_module,
 )
 from dagster_snowflake_pandas import SnowflakePandasIOManager
+from dagster_azure.adls2 import ADLS2Resource, ADLS2SASToken
 
 from . import assets
 
@@ -27,6 +28,10 @@ defs = Definitions(
             database=EnvVar("SNOWFLAKE_DATABASE"),
             schema=EnvVar("SNOWFLAKE_SCHEMA"),
         ),
+        "adls2": ADLS2Resource(
+            storage_account="my_storage_account",
+            credential=ADLS2SASToken(token="my_sas_token"),
+        )
     },
     schedules=[daily_refresh_schedule],
 )
