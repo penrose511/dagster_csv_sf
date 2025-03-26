@@ -7,13 +7,13 @@ def azure_blob_file_list(context):
     # Get the adls2 resource from context
     adls2: ADLS2Resource = context.resources.adls2
     
-    # Create a blob service client using the resource and SAS token
+    # Initialize the BlobServiceClient using the storage account URL and SAS token
     blob_service_client = BlobServiceClient(
         account_url=f"https://{adls2.storage_account}.blob.core.windows.net",
-        credential=adls2.credential,  # The SAS token is already part of the credential
+        credential=adls2.credential.token,
     )
     
-    # Specify the container you want to list files from
+    # Specify the container to list files from
     container_name = "storage"
     container_client = blob_service_client.get_container_client(container_name)
     
@@ -24,7 +24,7 @@ def azure_blob_file_list(context):
     for blob in blobs_list:
         file_names.append(blob.name)
     
-    # Optionally log or return the list of file names
+    # Log the number of files found and return the file names
     context.log.info(f"Found {len(file_names)} files in container '{container_name}'")
     
     return file_names
